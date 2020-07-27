@@ -238,14 +238,15 @@
 
 2. 多元线性回归的最小二乘估计原理同简单线性回归一样，期望将模型的RSS达到最小，如图所示
    
+
 <img src="images\ch3\3-4.png" style="zoom:50%;" />
-   
+
    但是需要用矩阵代数形式表示：
-   $$
+$$
    \pmb{\hat{\beta}}=(\pmb{X}^T\pmb{X})^{-1}\pmb{X}^T\pmb{y}
-   $$
+$$
    其中，$\pmb{\hat{\beta}}$为参数向量，$\pmb{X}$为预测变量矩阵，$\pmb{y}$为响应变量向量。
-   
+
    >**最小二乘估计的推导**
    >$$
    >\begin{align}
@@ -393,3 +394,206 @@
 6. 在简单线性回归中，最小二乘线通过点$(\bar{x},\bar{y})$.
 
 7. 证明简单线性回归中的$R^2$统计量等于X和Y之间的相关系数的平方。
+
+# 第四章 分类
+
+## 4.1 相关概念
+
+### 4.1.1 分类问题概述
+
+1. 分类问题是针对定性变量的，大部分基于不同类别的概率，将分类问题作为**概率估计**的一个结果。
+2. 当类别数较多（大于2类），则线性回归不具有意义，因为类别数无法被定量表达，例如：1代表红色，2代表绿色，3代表蓝色，则使这些类型具有可度量性，与实际不符，但对于2分类（0-1分类）来说，线性回归具有一定的意义，但预测结果很容易超过0-1范围。
+
+### 4.1.2 逻辑斯蒂回归
+
+1. **逻辑斯蒂回归（Logistic regression）**可以看成是线性回归的推广（广义线性回归），针对2分类问题，是神经网络中重要部分（激活函数，Sigmoid）。其形式为：
+   $$
+   p(X)=\frac{e^{\beta_0+\beta_1X}}{1+e^{\beta_0+\beta_1X}} \tag{4.1}
+   $$
+   <img src="images\ch4\4-2.png" style="zoom:40%;" />
+
+   当概率超过阈值时，则为正类，小于阈值时为负类。
+
+2. 4.1式可整理为$\frac{p(X)}{1-p(X)}=e^{\beta_0+\beta_1X}$，其中$\frac{p(X)}{1-p(X)}$称为**几率（odd）**，取值范围为0到$\infty$，对其两边取对数可得$log(\frac{p(X)}{1-p(X)})=\beta_0+\beta_1X$，因此，逻辑斯蒂回归可以视为分对数变换下关于X的线性回归模型，逻辑斯蒂模型也较为**对数几率回归**。（参考《机器学习》—周志华）
+
+3. 逻辑斯蒂回归**对Y属于某一类的概率建模**，而不直接对响应变量Y建模。
+
+4. 估计回归系数可使用极大似然估计，似然函数为：
+   $$
+   L(\beta_0,\beta_1)=\prod _{i:y_i=1}p(x_i)\prod _{i':y_{i'}=0}(1-p(x_{i'}))
+   $$
+
+   > 推导：
+   > $$
+   > \begin{align}
+   > 似然函数：L(w)&=\prod_{i=1}^N[p(x_i)]^{y_i}[1-p(x_i)]^{1-y_i}\\
+   > 对数似然函数：\mathbb{L}&=\sum_{i=1}^{N}[y_ilog\ p(x_i)+(1-y_i)log(1-p(x_i))]\\
+   > &=\sum_{i=1}^{N}[y_ilog\ \frac{p(x_i)}{1-p(x_i)}+log(1-p(x_i))]\\
+   > &=\sum_{i=1}^{N}[y_i(w\cdot x_i)-log(1+e^{(w\cdot x_i)})]\\
+   > \end{align}
+   > $$
+   > 使用梯度下降算法或牛顿法求解对数似然函数的极大值
+
+   > 注：极大似然估计可参考另一个笔记《概率论与数理统计笔记》https://github.com/QianXzhen/Statistics-note
+
+### 4.1.3 线性判别分析和二次判别分析（LDA和QDA）
+
+> 注：本书中是以统计（贝叶斯决策理论）角度来阐释的，从线性空间角度可以参考《机器学习》—周志华
+
+1. **贝叶斯定理（Bayes theorem）**可以表述为
+   $$
+   p_k(X)=\frac{\pi_kf_k(x)}{\sum^K_{l=1}\pi_lf_l(x)}
+   $$
+   其中，$p_k(X)=P(Y=k|X=x)$表示$X=x$的观测属于第$k$类的后验概率，$f_k(X)=P(X=x|Y=k)$表示第$k$类观测的$X$的密度函数，$\pi_k$为一个随机选择的观测来自$k$类的先验概率。**贝叶斯分类起将观测分到$p_k(X)$最大的一类中。**
+
+2. **单预测变量线性判别分析**，假设$f_k(x)$是**正态的或高斯的**，一维情况其密度函数为
+   $$
+   f_k(x)=\frac{1}{\sqrt{2\pi}\sigma_k}\exp{(-\frac{1}{2\sigma^2_k}(x-\mu_k)^2)}
+   $$
+   其中，$\mu_k$和$\sigma^2_k$是第$k$类的平均值和方差，且假设所有**方差是相等**的，则
+   $$
+   p_k(x)=\frac{\pi_k\frac{1}{\sqrt{2\pi}\sigma}\exp(-\frac{1}{2\sigma^2}(x-\mu_k)^2)}{\sum_{l=1}^K\pi_l\frac{1}{\sqrt{2\pi}\sigma}\exp(-\frac{1}{2\sigma^2}(x-\mu_l)^2)}
+   $$
+   化简得到等价式
+   $$
+   \delta_k(x)=x\cdot \frac{\mu_k}{\sigma^2}-\frac{\mu_k^2}{2\sigma^2}+\log(\pi_k)
+   $$
+   > 证明：
+   > $$
+   > \begin{align}
+   > &\left\{\begin{aligned}
+   > p_k(x) &= \frac {\pi_k
+   >                 \frac {1} {\sqrt{2 \pi} \sigma}
+   >                 \exp(- \frac {1} {2 \sigma^2} (x - \mu_k)^2)
+   >                }
+   >                {\sum {
+>                 \pi_l
+   >                 \frac {1} {\sqrt{2 \pi} \sigma}
+   >                 \exp(- \frac {1} {2 \sigma^2} (x - \mu_l)^2)
+   >                }}\\
+   > \delta_k(x) &= x \frac {\mu_k} {\sigma^2} - \frac {\mu_k^2} {2 \sigma^2}
+   >               + \log(\pi_k)\\
+   > \end{aligned}\right.\\
+   > 
+   > &令c = \frac {
+   >                 \frac {1} {\sqrt{2 \pi} \sigma}
+   >                 \exp(- \frac {1} {2 \sigma^2} x^2)
+   >                }
+   >                {\sum {
+   >                 \pi_l
+   >                 \frac {1} {\sqrt{2 \pi} \sigma}
+   >                 \exp(- \frac {1} {2 \sigma^2} (x - \mu_l)^2)
+   >                }}\\
+   > 
+   > &\therefore p_k(x) = C \pi_k \exp(- \frac {1} {2 \sigma^2} (\mu_k^2 - 2x \mu_k))\\
+   > &\therefore log(p_k(x)) = log(C) + log(\pi_k) + (- \frac {1} {2 \sigma^2} (\mu_k^2 - 2x \mu_k))\\
+   > &\therefore log(p_k(x)) =  (\frac {2x \mu_k} {2 \sigma^2} -\frac {\mu_k^2} {2 \sigma^2}) + log(\pi_k) + log(C)\\
+   > &\because C不随着k的变化而改变，其值是一个定值\\
+   > &\therefore 令\delta_k(x)=(\frac {2x \mu_k} {2 \sigma^2} -\frac {\mu_k^2} {2 \sigma^2}) + log(\pi_k)，最大化p_k(x)等价最大化\delta_k(x)
+   > \end{align}
+   > $$
+   
+   对于贝叶斯分类只要$\delta_k(x)$达到最大即可。与之相同，因为并不知道原始的参数，需要通过样本估计$\mu_k$、$\sigma$和$\pi_k$，其中
+   $$
+   \begin{align}
+   \hat{\mu}_k&=\frac{1}{n_k}\sum_{i:y_i=k}x_i\\
+   \hat{\sigma}^2&=\frac{1}{n-K}\sum_{k=1}^K \sum_{i:y_i=k}(x_i-\hat{\mu}_k)^2\\
+   \hat{\pi}_k&=\frac{n_k}{n}
+   \end{align}
+   $$
+   将这些估计值代入$\delta_k(x)$中，得到$\hat{\delta}_k(x)$，找到令其值最大的类别$k$作为观测的预测类别。
+   
+3. **多预测变量线性判别分析**，其原理和但预测变量相同，但是基于多元预测变量，所以均值和方差都变成了**均值向量**、**协方差矩阵**，多元高斯分布密度函数形式为
+   $$
+   f(x)=\frac{1}{(2\pi)^{p/2}|\Sigma|^{1/2}}\exp{(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu))}
+   $$
+   $\delta_k(x)$形式为
+   $$
+   \delta_k(x)=x^T\Sigma^{-1}\mu_k-\frac{1}{2}\mu_k^T\Sigma^{-1}\mu_k+\log\pi_k
+   $$
+
+4. **二次判别分析**与LDA不同之处在于不假设各样本的协方差矩阵（方差）相等，每类观测都有自己的协方差矩阵，形式为
+   $$
+   \delta_k(x)=-\frac{1}{2}x^T\Sigma_k^{-1}x+x^T\Sigma_k^{-1}\mu_k-\frac{1}{2}\mu_k^T\Sigma_k^{-1}\mu_k+\log\pi_k
+   $$
+   QDA和LDA的关系如同非线性回归和线性回归的关系，归属于方差和偏差权衡的问题。
+
+### 4.1.4 ROC曲线
+
+> 参考知乎回答：https://www.zhihu.com/question/39840928/answer/241440370（作者：无涯）
+
+1. 混淆矩阵中有着Positive、Negative、True、False的概念，其意义如下：
+
+   - 称预测类别为1的为Positive（阳性），预测类别为0的为Negative（阴性）。
+   - 预测正确的为True（真），预测错误的为False（伪）。
+
+   <img src="images\ch4\confuse.png" style="zoom:100%;" />
+
+**然后**，由此引出True Positive Rate（真阳率）、False Positive（伪阳率）两个概念：
+
+* $TP=\frac{TP}{TP+FN}$，指所有真实类别为1的样本中，预测类别为1的比例；
+* $FP=\frac{FP}{FP+TN}$，指所有真实类别为0的样本中，预测类别为1的比例。
+
+2. ROC曲线的横轴是FPRate，纵轴是TPRate，当二者相等时，即y=x，如下图
+
+   <img src="images\ch4\ROC.png" style="zoom:100%;" />
+
+   一个理想的ROC曲线会紧贴左上角，即期望真阳率为1，假阳率为0.
+
+3. AUC（area under the ROC）是ROC曲线下的面积，其最小值为0.5，即上图的面积，一个理想的ROC曲线的AUC为1，AUC的优势是**AUC的计算方法同时考虑了分类器对于正例和负例的分类能力，在样本不平衡的情况下，依然能够对分类器作出合理的评价**。
+
+   例子：
+
+   例如在反欺诈场景，设欺诈类样本为正例，正例占比很少（假设0.1%），如果使用准确率评估，把所有的样本预测为负例，便可以获得**99.9%的准确率**。
+
+   但是如果使用AUC，把所有样本预测为负例，TPRate和FPRate同时为0（没有Positive），与(0,0) (1,1)连接，得出**AUC仅为0.5**，成功规避了样本不均匀带来的问题。
+
+## 4.2 题目答案
+
+1. 证明逻辑斯蒂函数表达式和分对数表达式等价
+   $$
+   \begin{align}
+   &\left\{\begin{aligned}
+   P(X) = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}}\\
+   \frac {p(X)} {1 - p(X)} =e^{\beta_0 + \beta_1 X}\\
+   \end{aligned}\right.\\
+   
+   下证：\\
+   \frac {p(X)} {1 - p(X)}&= \frac {\frac {e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}}
+           {1 - \frac {e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}}
+   \\
+   \\
+   &= \frac {\frac {e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}}
+           {
+             \frac {1 + e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}
+             - \frac {e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}
+           }
+   \\
+   \\
+   &= \frac {\frac {e^{\beta_0 + \beta_1 X}} {1 + e^{\beta_0 + \beta_1 X}}}
+           {\frac {1} {1 + e^{\beta_0 + \beta_1 X}}}\\
+   \\
+   &=e^{\beta_0 + \beta_1 X}\\
+   \end{align}
+   $$
+   
+
+2. 贝叶斯将观测分入最大概率类别中$p_k(x)$和$\delta_k(x)$等价，已证。
+
+3. 设一类观测服从均值向量不同、协方差矩阵不等的正态分布，考虑只有一元变量，有K类观测，证明该种情况下，贝叶斯分类起不是线性的，是二次的。
+   $$
+   p_k(x) = \frac {\pi_k \frac {1} {\sqrt{2 \pi} \sigma_k} \exp(- \frac {1} {2 \sigma_k^2} (x - \mu_k)^2) } {\sum { \pi_l \frac {1} {\sqrt{2 \pi} \sigma_l} \exp(- \frac {1} {2 \sigma_l^2} (x - \mu_l)^2) }}\\
+   令C' = \frac { \frac {1} {\sqrt{2 \pi}}} {\sum { \pi_l \frac {1} {\sqrt{2 \pi} \sigma_k} \exp(- \frac {1} {2 \sigma_k^2} (x - \mu_l)^2) }}\\
+   \therefore p_k(x) = C' \frac{\pi_k}{\sigma_k} \exp(- \frac {1} {2 \sigma_k^2} (x - \mu_k)^2)\\
+   \therefore log(p_k(x)) = log(C') + log(\pi_k) - log(\sigma_k) + (- \frac {1} {2 \sigma_k^2} (x - \mu_k)^2)\\
+   $$
+   所以$log(p_k(x))$是关于$x$的二次函数。
+
+4. 当变量维数$p$很大时，只用测试观测附近的观测去做预测的局部方法效果都不理想，这种现象称为**维数灾难**（curse of dimensionality），即当$p$很大时，非参数模型效果很差。
+5. LDA v.s. QDA
+   * 如果**贝叶斯决策边界是线性**的，则训练集上QDA比LDA的效果好，测试集上LDA比QDA的效果好；
+   * 如果**贝叶斯决策边界是非线性**的，则训练集和测试集上QDA比LDA的效果好；
+   * 在一般情况下，随着样本量$n$增大，相比于LDA的测试预测率，QDA的预测率将变得更好，因为较大的样本量可以抵消方差，避免过拟合；
+   * 如果贝叶斯边界是线性的，应该使用LDA，不能因为QDA的光滑度高而选用。
+
+6-9. 略
