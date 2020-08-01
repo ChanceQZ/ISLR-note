@@ -467,7 +467,7 @@ $$
    >                 \exp(- \frac {1} {2 \sigma^2} (x - \mu_k)^2)
    >                }
    >                {\sum {
->                 \pi_l
+   >                 \pi_l
    >                 \frac {1} {\sqrt{2 \pi} \sigma}
    >                 \exp(- \frac {1} {2 \sigma^2} (x - \mu_l)^2)
    >                }}\\
@@ -494,15 +494,15 @@ $$
    > $$
    
    对于贝叶斯分类只要$\delta_k(x)$达到最大即可。与之相同，因为并不知道原始的参数，需要通过样本估计$\mu_k$、$\sigma$和$\pi_k$，其中
-   $$
-   \begin{align}
+$$
+\begin{align}
    \hat{\mu}_k&=\frac{1}{n_k}\sum_{i:y_i=k}x_i\\
    \hat{\sigma}^2&=\frac{1}{n-K}\sum_{k=1}^K \sum_{i:y_i=k}(x_i-\hat{\mu}_k)^2\\
    \hat{\pi}_k&=\frac{n_k}{n}
    \end{align}
-   $$
-   将这些估计值代入$\delta_k(x)$中，得到$\hat{\delta}_k(x)$，找到令其值最大的类别$k$作为观测的预测类别。
-   
+$$
+​		将这些估计值代入$\delta_k(x)$中，得到$\hat{\delta}_k(x)$，找到令其值最大的类别$k$作为观测的预测类别。
+
 3. **多预测变量线性判别分析**，其原理和但预测变量相同，但是基于多元预测变量，所以均值和方差都变成了**均值向量**、**协方差矩阵**，多元高斯分布密度函数形式为
    $$
    f(x)=\frac{1}{(2\pi)^{p/2}|\Sigma|^{1/2}}\exp{(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu))}
@@ -577,7 +577,6 @@ $$
    \end{align}
    $$
    
-
 2. 贝叶斯将观测分入最大概率类别中$p_k(x)$和$\delta_k(x)$等价，已证。
 
 3. 设一类观测服从均值向量不同、协方差矩阵不等的正态分布，考虑只有一元变量，有K类观测，证明该种情况下，贝叶斯分类起不是线性的，是二次的。
@@ -597,3 +596,68 @@ $$
    * 如果贝叶斯边界是线性的，应该使用LDA，不能因为QDA的光滑度高而选用。
 
 6-9. 略
+
+# 第五章 重抽样方法
+
+&emsp;&emsp;重抽样（resampling）通过反复从训练集中抽取样本，然后根据每一个样本重新拟合一个新模型，以此获得该模型的评价信息。重采样方法选择模型时，不是为了完美地估计出真实测试错误率，而是选择较优的超参数，使得模型能达到或逼近最低测试错误率。
+
+## 5.1 相关概念
+
+### 5.1.1 交叉验证法（Cross Validation）
+
+1. **验证集法（validation set approach）**，将获得的观测数据分为两个大小相当的子集：**训练集（training set）**和**验证集（validation set）**，或者说**保留集（hold-out set）**，其原理下图所示。
+
+   <img src="images\ch5\5-1.png" style="zoom:50%;" />
+
+   验证集方法**优点****原理简单，易于执行，但有两个潜在的**缺陷**：1.模型的测试错误率波动大；2.验证集错误率可能高估真实测试错误率。
+
+2. **留一交叉验证法（leave-one-out cross-validation，LOOCV）**，该方法将当一个单独的观测作为验证集，剩下的n-1个观测组成训练集，重复该步骤n次，最后测试均方误差的LOOCV估计是这n个测试误差估计的均值：$CV_{(n)}=\frac{1}{n}\sum_{i=1}^nMSE_i$，其原理如下图所示。
+
+   <img src="images\ch5\5-2.png" style="zoom:50%;" />
+
+   LOOCV方法有以下几个**优点**：1.估计的偏差小；2.由于LOOCV方法在训练集和验证集的分割上不存在随机性，因此多次运用LOOCV方法总会得到相同的结果。**缺点**：1.计算量很大，模型需要被拟合n次；2产生的测试误差估计的方差比k折CV法的大。
+
+   > 注：用最小二乘法拟合线性或者多项式回归模型时，LOOCV方法所花费的时间将缩减至与拟合一个模型相同，公式如下：
+   > $$
+   > CV_{(n)}=\frac{1}{n}\sum_{i=1}^n(\frac{y_i-\hat{y}_i}{1-h_i})^2
+   > $$
+   > 其中$\hat{y}_i$为原始最小二乘拟合的第$i$个拟合值，$h_i$为杠杆值
+
+3. **k折交叉验证法（k-fold CV）**，将观测值随机分为k个大小基本一致的组，或折（fold），选择一折作为验证集，剩下的k-1折作为训练集，重复k次，最后k折CV估计是k个测试误差估计的均值：$CV_{(k)}=\frac{1}{k}\sum_{i=1}^kMSE_i$，其原理如下图所示。
+
+   <img src="images\ch5\5-3.png" style="zoom:50%;" />
+
+   在实践中，一般令k=5或k=10，特别的，当k等于n时，该方法即为LOOCV。k折交叉验证法具有较多优点，最重要的是**该方法能兼顾到方差和偏差的权衡**。
+
+### 5.1.2 自助法（Bootstrap）
+
+&emsp;&emsp;自助法简单的来说就是对现有观测集进行有放回抽样，形成若干个样本，该原理如下图所示。
+
+<img src="images\ch5\5-4.png" style="zoom:50%;" />
+
+> 在Bootstrap中，用替换法从大小为N的数据集中采样N个实例，原始数据集被用作验证集。选择一个实例的概率是$\frac{1}{N}$;我们不选择这个实例的概率$1-\frac{1}{N}$。N次抽样后我们没有选中这个实例的概率是$(1-1/N)^{N} \approx e^{-1}=0.368$。这意味着训练数据只包含约$63.2\%$的实例，也就是说这个系统不会在另外$36.8\%$的数据上训练，这会为评估带来悲观偏差。解决方法是重复这个过程很多次来观察平均值。
+>
+> 转自：Introduction to Machine Learning（Ethem Alpaydin）
+
+
+
+## 5.2 题目答案
+
+1. 证明$\alpha = \frac {\sigma_Y^2 - \sigma_{XY}}{\sigma_X^2 + \sigma_Y^2 - 2 \sigma_{XY}}$使$Var(\alpha X + (1 - \alpha)Y)$最小。
+   $$
+   \begin{align}
+   Var(\alpha X + (1 - \alpha)Y)
+   &= Var(\alpha X) + Var((1 - \alpha) Y) + 2 Cov(\alpha X, (1 - \alpha) Y)
+   \\
+   &= \alpha^2 Var(X) + (1 - \alpha)^2 Var(Y) + 2 \alpha (1 - \alpha) Cov(X, Y)
+   \\
+   &= \sigma_X^2 \alpha^2 + \sigma_Y^2 (1 - \alpha)^2 + 2 \sigma_{XY} (-\alpha^2 +
+   \alpha)\\
+   &=(\sigma_X^2+\sigma_Y^2-2\sigma_{XY})\alpha^2+(2\sigma_{XY}-2\sigma_Y^2)\alpha+\sigma_Y^2\\
+   \therefore argmin(Var(aX+(1-\alpha)Y))&=-\frac{2\sigma_{XY}-2\sigma_Y^2}{2(\sigma_X^2+\sigma_Y^2-2\sigma_{XY})}
+   \end{align}
+   $$
+   
+
+2. 见5.1.2
+3. 4. 略
